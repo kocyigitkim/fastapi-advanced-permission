@@ -1,0 +1,25 @@
+{
+  "extends": "tslint:recommended",
+  "rulesDirectory": ["src"],
+  "rules": {
+    "new-parens": true,
+    "no-arg": true,
+    "no-bitwise": true,
+    "no-conditional-assignment": true,
+    "no-consecutive-blank-lines": false,
+    "ban-types": false,
+    "max-classes-per-file": false,
+    "no-namespace": false,
+    "no-shadowed-variable": false,
+    "callable-types": false,
+    "no-var-keyword": false,
+    "prefer-const": false,
+    "no-string-literal": false,
+    "no-string-throw": false,
+    "variable-name":false,
+    "no-console": {
+      "severity": "warning",
+      "options": ["debug", "info", "log", "time", "timeEnd", "trace"]
+    }
+  }
+}
