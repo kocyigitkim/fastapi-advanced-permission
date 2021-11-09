@@ -9,111 +9,105 @@ export class MigrationColumnDefinition {
 export class MigrationTableDefinition {
     constructor(public name: string, public columns: MigrationColumnDefinition[]) { }
 }
-export namespace TableMapping {
-    export enum PermissionMapping {
-        Id = 0,
-        Path = 1,
-        CreatedBy = 2,
-        CreatedDate = 3,
-        ModifiedBy = 4,
-        ModifiedDate = 5,
-        IsDeleted = 6,
-        DeletedBy = 7,
-        DeletedDate = 8
-    }
-    export enum RoleMapping {
-        Id = 0,
-        Name = 1,
-        CreatedBy = 2,
-        CreatedDate = 3,
-        ModifiedBy = 4,
-        ModifiedDate = 5,
-        IsDeleted = 6,
-        DeletedBy = 7,
-        DeletedDate = 8
-    }
-    export enum RolePermissionMapping {
-        Id = 0,
-        RoleId = 1,
-        PermissionId = 2,
-        CreatedBy = 3,
-        CreatedDate = 4,
-        ModifiedBy = 5,
-        ModifiedDate = 6,
-        IsDeleted = 7,
-        DeletedBy = 8,
-        DeletedDate = 9
-    }
-    export enum UserMapping {
-        Id = 0
-    }
-    export enum UserDelegationMapping {
-        Id = 0,
-        RequestedBy = 1,
-        RequestedTo = 2,
-        CreatedBy = 3,
-        CreatedDate = 4,
-        IsDeleted = 5,
-        DeletedBy = 6,
-        DeletedDate = 7
-    }
-    export enum UserRoleMapping {
-        Id = 0,
-        UserId = 1,
-        RoleId = 2,
-        CreatedBy = 3,
-        CreatedDate = 4,
-        IsDeleted = 5,
-        DeletedBy = 6,
-        DeletedDate = 7
-    }
-    export enum UserPermissionMapping {
-        Id = 0,
-        UserId = 1,
-        PermissionId = 2,
-        RelatedName = 3,
-        RelatedId = 4,
-        CreatedBy = 5,
-        CreatedDate = 6,
-        IsDeleted = 7,
-        DeletedBy = 8,
-        DeletedDate = 9
-    }
-    export enum TeamMapping {
-        Id = 0
-    }
-    export enum TeamUserMapping {
-        Id = 0,
-        TeamId = 1,
-        UserId = 2,
-        CreatedBy = 3,
-        CreatedDate = 4,
-        IsDeleted = 5,
-        DeletedBy = 6,
-        DeletedDate = 7
-    }
-    export enum TeamRoleMapping {
-        Id = 0,
-        TeamId = 1,
-        RoleId = 2,
-        CreatedBy = 3,
-        CreatedDate = 4,
-        IsDeleted = 5,
-        DeletedBy = 6,
-        DeletedDate = 7
-    }
-    export enum TeamPermissionMapping {
-        Id = 0,
-        TeamId = 1,
-        PermissionId = 2,
-        RelatedName = 3,
-        RelatedId = 4,
-        CreatedBy = 5,
-        CreatedDate = 6,
-        IsDeleted = 7,
-        DeletedBy = 8,
-        DeletedDate = 9
-    }
+export class TableMapping {
+    static PermissionMapping = {
+        Id: 0,
+        Path: 1,
+        CreatedBy: 2,
+        CreatedDate: 3,
+        IsDeleted: 4,
+        DeletedBy: 5,
+        DeletedDate: 6
+    };
+    static RoleMapping = {
+        Id: 0,
+        Name: 1,
+        CreatedBy: 2,
+        CreatedDate: 3,
+        IsDeleted: 4,
+        DeletedBy: 5,
+        DeletedDate: 6
+    };
+    static RolePermissionMapping = {
+        Id: 0,
+        RoleId: 1,
+        PermissionId: 2,
+        CreatedBy: 3,
+        CreatedDate: 4,
+        IsDeleted: 5,
+        DeletedBy: 6,
+        DeletedDate: 7
+    };
+    static UserMapping = {
+        Id: 0
+    };
+    static UserDelegationMapping = {
+        Id: 0,
+        RequestedBy: 1,
+        RequestedTo: 2,
+        CreatedBy: 3,
+        CreatedDate: 4,
+        IsDeleted: 5,
+        DeletedBy: 6,
+        DeletedDate: 7
+    };
+    static UserRoleMapping = {
+        Id: 0,
+        UserId: 1,
+        RoleId: 2,
+        CreatedBy: 3,
+        CreatedDate: 4,
+        IsDeleted: 5,
+        DeletedBy: 6,
+        DeletedDate: 7
+    };
+    static UserPermissionMapping = {
+        Id: 0,
+        UserId: 1,
+        PermissionId: 2,
+        RelatedName: 3,
+        RelatedId: 4,
+        CreatedBy: 5,
+        CreatedDate: 6,
+        IsDeleted: 7,
+        DeletedBy: 8,
+        DeletedDate: 9
+    };
+    static TeamMapping = {
+        Id: 0
+    };
+    static TeamUserMapping = {
+        Id: 0,
+        TeamId: 1,
+        UserId: 2,
+        CreatedBy: 3,
+        CreatedDate: 4,
+        IsDeleted: 5,
+        DeletedBy: 6,
+        DeletedDate: 7
+    };
+    static TeamRoleMapping = {
+        Id: 0,
+        TeamId: 1,
+        RoleId: 2,
+        CreatedBy: 3,
+        CreatedDate: 4,
+        IsDeleted: 5,
+        DeletedBy: 6,
+        DeletedDate: 7
+    };
+    static TeamPermissionMapping = {
+        Id: 0,
+        TeamId: 1,
+        PermissionId: 2,
+        RelatedName: 3,
+        RelatedId: 4,
+        CreatedBy: 5,
+        CreatedDate: 6,
+        IsDeleted: 7,
+        DeletedBy: 8,
+        DeletedDate: 9
+    };
 }
 export class MigrationTables {
     public static DefaultPermissionTable = new MigrationTableDefinition("Permission", [
@@ -121,8 +115,6 @@ export class MigrationTables {
         new MigrationColumnDefinition("Path", "nvarchar(MAX)", false, null),
         new MigrationColumnDefinition("CreatedBy", "uniqueidentifier", false, "User.Id"),
         new MigrationColumnDefinition("CreatedDate", "datetime", false, null),
-        new MigrationColumnDefinition("ModifiedBy", "uniqueidentifier", false, "User.Id"),
-        new MigrationColumnDefinition("ModifiedDate", "datetime", false, null),
         new MigrationColumnDefinition("IsDeleted", "bit", false, null),
         new MigrationColumnDefinition("DeletedBy", "uniqueidentifier", false, "User.Id"),
         new MigrationColumnDefinition("DeletedDate", "datetime", false, null)
@@ -132,8 +124,6 @@ export class MigrationTables {
         new MigrationColumnDefinition("Name", "nvarchar(MAX)", false, null),
         new MigrationColumnDefinition("CreatedBy", "uniqueidentifier", false, "User.Id"),
         new MigrationColumnDefinition("CreatedDate", "datetime", false, null),
-        new MigrationColumnDefinition("ModifiedBy", "uniqueidentifier", false, "User.Id"),
-        new MigrationColumnDefinition("ModifiedDate", "datetime", false, null),
         new MigrationColumnDefinition("IsDeleted", "bit", false, null),
         new MigrationColumnDefinition("DeletedBy", "uniqueidentifier", false, "User.Id"),
         new MigrationColumnDefinition("DeletedDate", "datetime", false, null)
@@ -144,8 +134,6 @@ export class MigrationTables {
         new MigrationColumnDefinition("PermissionId", "uniqueidentifier", false, "Permission.Id"),
         new MigrationColumnDefinition("CreatedBy", "uniqueidentifier", false, "User.Id"),
         new MigrationColumnDefinition("CreatedDate", "datetime", false, null),
-        new MigrationColumnDefinition("ModifiedBy", "uniqueidentifier", false, "User.Id"),
-        new MigrationColumnDefinition("ModifiedDate", "datetime", false, null),
         new MigrationColumnDefinition("IsDeleted", "bit", false, null),
         new MigrationColumnDefinition("DeletedBy", "uniqueidentifier", false, "User.Id"),
         new MigrationColumnDefinition("DeletedDate", "datetime", false, null)
@@ -223,17 +211,17 @@ export class MigrationTables {
 }
 export class MigrationTableMapping {
     constructor(
-        public permission: TableMapping.PermissionMapping = null,
-        public role: TableMapping.RoleMapping = null,
-        public rolePermission: TableMapping.RolePermissionMapping = null,
-        public user: TableMapping.UserMapping = null,
-        public userDelegation: TableMapping.UserDelegationMapping = null,
-        public userRole: TableMapping.UserRoleMapping = null,
-        public userPermission: TableMapping.UserPermissionMapping = null,
-        public team: TableMapping.TeamMapping = null,
-        public teamUser: TableMapping.TeamUserMapping = null,
-        public teamRole: TableMapping.TeamRoleMapping = null,
-        public teamPermission: TableMapping.TeamPermissionMapping = null
+        public permission = TableMapping.PermissionMapping,
+        public role = TableMapping.RoleMapping,
+        public rolePermission = TableMapping.RolePermissionMapping,
+        public user = TableMapping.UserMapping,
+        public userDelegation = TableMapping.UserDelegationMapping,
+        public userRole = TableMapping.UserRoleMapping,
+        public userPermission = TableMapping.UserPermissionMapping,
+        public team = TableMapping.TeamMapping,
+        public teamUser = TableMapping.TeamUserMapping,
+        public teamRole = TableMapping.TeamRoleMapping,
+        public teamPermission = TableMapping.TeamPermissionMapping
     ) {
         if (!permission) this.permission = (TableMapping.PermissionMapping as any);
         if (!role) this.role = (TableMapping.RoleMapping as any);
@@ -253,6 +241,7 @@ export class PermissionMigrationConfig {
         public roleTable: MigrationTableDefinition = null,
         public rolePermissionTable: MigrationTableDefinition = null,
         public userTable: MigrationTableDefinition = null,
+        public userDelegationTable: MigrationTableDefinition = null,
         public userRoleTable: MigrationTableDefinition = null,
         public userPermissionTable: MigrationTableDefinition = null,
         public teamTable: MigrationTableDefinition = null,
@@ -263,6 +252,8 @@ export class PermissionMigrationConfig {
         public teamPermissionEnabled: Boolean = false,
         public userRelatedPermissionEnabled: Boolean = false,
         public teamRelatedPermissionEnabled: Boolean = false,
+        public userDelegationEnabled: Boolean = false,
+        public cacheEnabled: Boolean = false,
         public TableMapping: MigrationTableMapping = null
     ) {
         if (!permissionTable) this.permissionTable = MigrationTables.DefaultPermissionTable;
@@ -270,11 +261,13 @@ export class PermissionMigrationConfig {
         if (!rolePermissionTable) this.rolePermissionTable = MigrationTables.DefaultRolePermissionTable;
         if (!userTable) this.userTable = MigrationTables.DefaultUserTable;
         if (!userRoleTable) this.userRoleTable = MigrationTables.DefaultUserRole;
+        if (!userDelegationTable) this.userDelegationTable = MigrationTables.DefaultUserDelegation;
         if (!userPermissionTable) this.userPermissionTable = MigrationTables.DefaultUserPermissionTable;
         if (!teamTable) this.teamTable = MigrationTables.DefaultTeamTable;
         if (!teamUserTable) this.teamUserTable = MigrationTables.DefaultTeamUser;
         if (!teamRoleTable) this.teamRoleTable = MigrationTables.DefaultTeamRole;
         if (!teamPermissionTable) this.teamPermissionTable = MigrationTables.DefaultTeamPermission;
+        if (!TableMapping) this.TableMapping = new MigrationTableMapping();
     }
 }
 
@@ -319,8 +312,12 @@ interface PermissionUserResolver {
     (req: Request): Promise<UserRecord>;
 }
 interface RecordReferenceResolver {
-    (path: string[],request: any): Promise<RelatedRecord>;
+    (path: string[], request: any): Promise<RelatedRecord>;
 }
 export class PermissionControllerConfig {
-    constructor(public migration: PermissionMigration, public userResolver: PermissionUserResolver, public recordResolver: RecordReferenceResolver, public migrationEnabled: Boolean) { }
+    constructor(public migration: PermissionMigration, public userResolver: PermissionUserResolver, public recordResolver: RecordReferenceResolver, public migrationEnabled: Boolean, public apiEndPoint: string, public apiEndPointEnabled: Boolean = true) {
+        if (!this.apiEndPoint) {
+            this.apiEndPoint = "/api/permission/check";
+        }
+    }
 }

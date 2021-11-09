@@ -26,15 +26,23 @@ const matchPermission = (a: string[], b: string) => {
     }
     return count === bParts.length;
 };
-
+const formatInsertRecord = (record) => {
+    var result = {};
+    for (var k of Object.keys(record)) {
+        result[k.split('.').reverse()[0]] = record[k];
+    }
+    return result;
+}
+export interface FastApiCustomPermissionDelegate {
+    (ctx: PermissionContext): Promise<Boolean>;
+}
 export class PermissionController {
+    public CustomPermission: FastApiCustomPermissionDelegate = null;
     private RP_RoleId: string;
     private RP_PermissionId: string;
     private RP_IsDeleted: string;
     private RP_CreatedBy: string;
     private RP_CreatedDate: string;
-    private RP_ModifiedBy: string;
-    private RP_ModifiedDate: string;
     private RP_DeletedBy: string;
     private RP_DeletedDate: string;
     private RP_Table: string;
@@ -43,18 +51,15 @@ export class PermissionController {
     private R_IsDeleted: string;
     private R_CreatedBy: string;
     private R_CreatedDate: string;
-    private R_ModifiedBy: string;
-    private R_ModifiedDate: string;
     private R_DeletedBy: string;
     private R_DeletedDate: string;
     private R_Table: string;
     private P_Id: string;
     private P_IsDeleted: string;
     private P_Path: string;
+    private P_PathFieldName: string;
     private P_CreatedBy: string;
     private P_CreatedDate: string;
-    private P_ModifiedBy: string;
-    private P_ModifiedDate: string;
     private P_DeletedBy: string;
     private P_DeletedDate: string;
     private P_Table: string;
@@ -63,8 +68,6 @@ export class PermissionController {
     private UR_IsDeleted: string;
     private UR_CreatedBy: string;
     private UR_CreatedDate: string;
-    private UR_ModifiedBy: string;
-    private UR_ModifiedDate: string;
     private UR_DeletedBy: string;
     private UR_DeletedDate: string;
     private UR_Table: string;
@@ -75,18 +78,22 @@ export class PermissionController {
     private UP_RelatedId: string;
     private UP_CreatedBy: string;
     private UP_CreatedDate: string;
-    private UP_ModifiedBy: string;
-    private UP_ModifiedDate: string;
     private UP_DeletedBy: string;
     private UP_DeletedDate: string;
+    private UD_Table: string;
+    private UD_RequestedBy: string;
+    private UD_RequestedTo: string;
+    private UD_CreatedBy: string;
+    private UD_CreatedDate: string;
+    private UD_IsDeleted: string;
+    private UD_DeletedBy: string;
+    private UD_DeletedDate: string;
     private UP_Table: string;
     private TU_Table: string;
     private TU_UserId: string;
     private TU_TeamId: string;
     private TU_CreatedBy: string;
     private TU_CreatedDate: string;
-    private TU_ModifiedBy: string;
-    private TU_ModifiedDate: string;
     private TU_DeletedBy: string;
     private TU_DeletedDate: string;
     private TU_IsDeleted: string;
@@ -96,8 +103,6 @@ export class PermissionController {
     private TR_IsDeleted: string;
     private TR_CreatedBy: string;
     private TR_CreatedDate: string;
-    private TR_ModifiedBy: string;
-    private TR_ModifiedDate: string;
     private TR_DeletedBy: string;
     private TR_DeletedDate: string;
     private TP_Table: string;
@@ -108,8 +113,6 @@ export class PermissionController {
     private TP_RelatedName: string;
     private TP_CreatedBy: string;
     private TP_CreatedDate: string;
-    private TP_ModifiedBy: string;
-    private TP_ModifiedDate: string;
     private TP_DeletedBy: string;
     private TP_DeletedDate: string;
 
@@ -138,7 +141,95 @@ export class PermissionController {
     private schemas = [];
     constructor(public config: PermissionControllerConfig) { }
     async build(app: Application) {
+
+        if (this.config.apiEndPointEnabled) {
+            app.use(this.config.apiEndPoint + "/set", async (req, res, next) => {
+                var user: UserRecord = this.config.userResolver ? await this.config.userResolver(req) : null;
+                if (user == null) {
+                    user = this.getAnonymousUser();
+                }
+                var result = [];
+                var statusCode = 200;
+
+                if (req.body && req.body.length > 0) {
+                    const oldBody = req.body;
+                    for (var item of oldBody) {
+                        req.body = item;
+                        var isGranted: Boolean = false;
+                        var urlParts: string[] = (item && item.path || "").split('/').map(p => p.trim()).filter(p => p.length > 0);
+                        if (urlParts.length > 0) {
+                            var relatedRecord: RelatedRecord = this.config.recordResolver ? await this.config.recordResolver(urlParts, req) : null;
+                            var permissionContext: PermissionContext = new PermissionContext(req, user, new PermissionRequest(urlParts));
+                            isGranted = await this.check(permissionContext, relatedRecord, item && item.Id ? true : false);
+                        }
+                        if (isGranted) {
+                            result.push({
+                                success: true,
+                                message: 'SUCCESS.ACCESSGRANTED',
+                                reason: 'Access granted.',
+                                data: null,
+                                status: 200,
+                                timestamp: new Date()
+                            });
+                        }
+                        else {
+                            result.push({
+                                success: false,
+                                message: 'ERROR.ACCESSDENIED',
+                                reason: 'You do not have permission to access this resource.',
+                                status: 403,
+                                timestamp: new Date(),
+                                data: null
+                            });
+                        }
+                    }
+                    req.body = oldBody;
+
+                } else {
+                    statusCode = 204; // no-content
+                }
+
+                res.status(statusCode).json(result);
+            });
+
+            app.use(this.config.apiEndPoint, async (req, res, next) => {
+                var isGranted: Boolean = false;
+                var user: UserRecord = this.config.userResolver ? await this.config.userResolver(req) : null;
+                if (user == null) {
+                    user = this.getAnonymousUser();
+                }
+                var urlParts: string[] = (req.body && req.body.path || "").split('/').map(p => p.trim()).filter(p => p.length > 0);
+                if (urlParts.length > 0) {
+                    var relatedRecord: RelatedRecord = this.config.recordResolver ? await this.config.recordResolver(urlParts, req) : null;
+                    var permissionContext: PermissionContext = new PermissionContext(req, user, new PermissionRequest(urlParts));
+                    isGranted = await this.check(permissionContext, relatedRecord, req.body && req.body.Id ? true : false);
+                }
+                if (isGranted) {
+                    res.status(200).json({
+                        success: true,
+                        message: 'SUCCESS.ACCESSGRANTED',
+                        reason: 'Access granted.',
+                        data: null,
+                        status: 200,
+                        timestamp: new Date()
+                    });
+                }
+                else {
+                    res.status(403).json({
+                        success: false,
+                        message: 'ERROR.ACCESSDENIED',
+                        reason: 'You do not have permission to access this resource.',
+                        status: 403,
+                        timestamp: new Date(),
+                        data: null
+                    });
+                }
+            });
+
+        }
+
         app.use(this.use.bind(this));
+
         const baseUse = app.use;
         (app as any).baseUse = baseUse.bind(app);
         (app as any).use = ((app: Application, ...args) => {
@@ -155,123 +246,123 @@ export class PermissionController {
         if (this.config.migration) {
             const mapping = this.config.migration.config;
             this.db = this.config.migration.db;
-            this.RP_RoleId = mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission["RoleId"]].name;
-            this.RP_PermissionId = mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission["PermissionId"]].name;
-            this.RP_IsDeleted = mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission["IsDeleted"]].name;
-            this.RP_CreatedBy = mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission["CreatedBy"]].name;
-            this.RP_CreatedDate = mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission["CreatedDate"]].name;
-            this.RP_ModifiedBy = mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission["ModifiedBy"]].name;
-            this.RP_ModifiedDate = mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission["ModifiedDate"]].name;
-            this.RP_DeletedBy = mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission["DeletedBy"]].name;
-            this.RP_DeletedDate = mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission["DeletedDate"]].name;
             this.RP_Table = mapping.rolePermissionTable.name;
-            this.R_Id = mapping.roleTable.columns[mapping.TableMapping.role["Id"]].name;
-            this.R_Name = mapping.roleTable.columns[mapping.TableMapping.role["Name"]].name;
-            this.R_IsDeleted = mapping.roleTable.columns[mapping.TableMapping.role["IsDeleted"]].name;
-            this.R_CreatedBy = mapping.roleTable.columns[mapping.TableMapping.role["CreatedBy"]].name;
-            this.R_CreatedDate = mapping.roleTable.columns[mapping.TableMapping.role["CreatedDate"]].name;
-            this.R_ModifiedBy = mapping.roleTable.columns[mapping.TableMapping.role["ModifiedBy"]].name;
-            this.R_ModifiedDate = mapping.roleTable.columns[mapping.TableMapping.role["ModifiedDate"]].name;
-            this.R_DeletedBy = mapping.roleTable.columns[mapping.TableMapping.role["DeletedBy"]].name;
-            this.R_DeletedDate = mapping.roleTable.columns[mapping.TableMapping.role["DeletedDate"]].name;
             this.R_Table = mapping.roleTable.name;
-            this.P_Id = mapping.permissionTable.columns[mapping.TableMapping.permission["Id"]].name;
-            this.P_IsDeleted = mapping.permissionTable.columns[mapping.TableMapping.permission["IsDeleted"]].name;
-            this.P_Path = mapping.permissionTable.columns[mapping.TableMapping.permission["Path"]].name;
-            this.P_CreatedBy = mapping.permissionTable.columns[mapping.TableMapping.permission["CreatedBy"]].name;
-            this.P_CreatedDate = mapping.permissionTable.columns[mapping.TableMapping.permission["CreatedDate"]].name;
-            this.P_ModifiedBy = mapping.permissionTable.columns[mapping.TableMapping.permission["ModifiedBy"]].name;
-            this.P_ModifiedDate = mapping.permissionTable.columns[mapping.TableMapping.permission["ModifiedDate"]].name;
-            this.P_DeletedBy = mapping.permissionTable.columns[mapping.TableMapping.permission["DeletedBy"]].name;
-            this.P_DeletedDate = mapping.permissionTable.columns[mapping.TableMapping.permission["DeletedDate"]].name;
             this.P_Table = mapping.permissionTable.name;
-            this.UR_RoleId = mapping.userRoleTable.columns[mapping.TableMapping.userRole["RoleId"]].name;
-            this.UR_UserId = mapping.userRoleTable.columns[mapping.TableMapping.userRole["UserId"]].name;
-            this.UR_IsDeleted = mapping.userRoleTable.columns[mapping.TableMapping.userRole["IsDeleted"]].name;
-            this.UR_CreatedBy = mapping.userRoleTable.columns[mapping.TableMapping.userRole["CreatedBy"]].name;
-            this.UR_CreatedDate = mapping.userRoleTable.columns[mapping.TableMapping.userRole["CreatedDate"]].name;
-            this.UR_ModifiedBy = mapping.userRoleTable.columns[mapping.TableMapping.userRole["ModifiedBy"]].name;
-            this.UR_ModifiedDate = mapping.userRoleTable.columns[mapping.TableMapping.userRole["ModifiedDate"]].name;
-            this.UR_DeletedBy = mapping.userRoleTable.columns[mapping.TableMapping.userRole["DeletedBy"]].name;
-            this.UR_DeletedDate = mapping.userRoleTable.columns[mapping.TableMapping.userRole["DeletedDate"]].name;
             this.UR_Table = mapping.userRoleTable.name;
-            this.UP_UserId = mapping.userPermissionTable.columns[mapping.TableMapping.userPermission["UserId"]].name;
-            this.UP_IsDeleted = mapping.userPermissionTable.columns[mapping.TableMapping.userPermission["IsDeleted"]].name;
-            this.UP_PermissionId = mapping.userPermissionTable.columns[mapping.TableMapping.userPermission["PermissionId"]].name;
-            this.UP_RelatedName = mapping.userPermissionTable.columns[mapping.TableMapping.userPermission["RelatedName"]].name;
-            this.UP_RelatedId = mapping.userPermissionTable.columns[mapping.TableMapping.userPermission["RelatedId"]].name;
-            this.UP_CreatedBy = mapping.userPermissionTable.columns[mapping.TableMapping.userPermission["CreatedBy"]].name;
-            this.UP_CreatedDate = mapping.userPermissionTable.columns[mapping.TableMapping.userPermission["CreatedDate"]].name;
-            this.UP_ModifiedBy = mapping.userPermissionTable.columns[mapping.TableMapping.userPermission["ModifiedBy"]].name;
-            this.UP_ModifiedDate = mapping.userPermissionTable.columns[mapping.TableMapping.userPermission["ModifiedDate"]].name;
-            this.UP_DeletedBy = mapping.userPermissionTable.columns[mapping.TableMapping.userPermission["DeletedBy"]].name;
-            this.UP_DeletedDate = mapping.userPermissionTable.columns[mapping.TableMapping.userPermission["DeletedDate"]].name;
+            this.UD_Table = mapping.userDelegationTable.name;
             this.UP_Table = mapping.userPermissionTable.name;
             this.TU_Table = mapping.teamUserTable.name;
-            this.TU_UserId = mapping.teamUserTable.columns[mapping.TableMapping.teamUser["UserId"]].name;
-            this.TU_TeamId = mapping.teamUserTable.columns[mapping.TableMapping.teamUser["TeamId"]].name;
-            this.TU_IsDeleted = mapping.teamUserTable.columns[mapping.TableMapping.teamUser["IsDeleted"]].name;
-            this.TU_CreatedBy = mapping.teamUserTable.columns[mapping.TableMapping.teamUser["CreatedBy"]].name;
-            this.TU_CreatedDate = mapping.teamUserTable.columns[mapping.TableMapping.teamUser["CreatedDate"]].name;
-            this.TU_ModifiedBy = mapping.teamUserTable.columns[mapping.TableMapping.teamUser["ModifiedBy"]].name;
-            this.TU_ModifiedDate = mapping.teamUserTable.columns[mapping.TableMapping.teamUser["ModifiedDate"]].name;
-            this.TU_DeletedBy = mapping.teamUserTable.columns[mapping.TableMapping.teamUser["DeletedBy"]].name;
-            this.TU_DeletedDate = mapping.teamUserTable.columns[mapping.TableMapping.teamUser["DeletedDate"]].name;
             this.TR_Table = mapping.teamRoleTable.name;
-            this.TR_RoleId = mapping.teamRoleTable.columns[mapping.TableMapping.teamRole["RoleId"]].name;
-            this.TR_TeamId = mapping.teamRoleTable.columns[mapping.TableMapping.teamRole["TeamId"]].name;
-            this.TR_IsDeleted = mapping.teamRoleTable.columns[mapping.TableMapping.teamRole["IsDeleted"]].name;
-            this.TR_CreatedBy = mapping.teamRoleTable.columns[mapping.TableMapping.teamRole["CreatedBy"]].name;
-            this.TR_CreatedDate = mapping.teamRoleTable.columns[mapping.TableMapping.teamRole["CreatedDate"]].name;
-            this.TR_ModifiedBy = mapping.teamRoleTable.columns[mapping.TableMapping.teamRole["ModifiedBy"]].name;
-            this.TR_ModifiedDate = mapping.teamRoleTable.columns[mapping.TableMapping.teamRole["ModifiedDate"]].name;
-            this.TR_DeletedBy = mapping.teamRoleTable.columns[mapping.TableMapping.teamRole["DeletedBy"]].name;
-            this.TR_DeletedDate = mapping.teamRoleTable.columns[mapping.TableMapping.teamRole["DeletedDate"]].name;
             this.TP_Table = mapping.teamPermissionTable.name;
-            this.TP_PermissionId = mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission["PermissionId"]].name;
-            this.TP_TeamId = mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission["TeamId"]].name;
-            this.TP_IsDeleted = mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission["IsDeleted"]].name;
-            this.TP_RelatedId = mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission["RelatedId"]].name;
-            this.TP_RelatedName = mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission["RelatedName"]].name;
-            this.TP_CreatedBy = mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission["CreatedBy"]].name;
-            this.TP_CreatedDate = mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission["CreatedDate"]].name;
-            this.TP_ModifiedBy = mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission["ModifiedBy"]].name;
-            this.TP_ModifiedDate = mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission["ModifiedDate"]].name;
-            this.TP_DeletedBy = mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission["DeletedBy"]].name;
-            this.TP_DeletedDate = mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission["DeletedDate"]].name;
 
-            if (mapping.permissionTable.columns[mapping.TableMapping.permission["Id"]].type === 'uniqueidentifier') {
+            this.RP_RoleId = this.RP_Table + "." + mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission.RoleId].name;
+            this.RP_PermissionId = this.RP_Table + "." + mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission.PermissionId].name;
+            this.RP_IsDeleted = this.RP_Table + "." + mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission.IsDeleted].name;
+            this.RP_CreatedBy = this.RP_Table + "." + mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission.CreatedBy].name;
+            this.RP_CreatedDate = this.RP_Table + "." + mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission.CreatedDate].name;
+            this.RP_DeletedBy = this.RP_Table + "." + mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission.DeletedBy].name;
+            this.RP_DeletedDate = this.RP_Table + "." + mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission.DeletedDate].name;
+            this.R_Id = this.R_Table + "." + mapping.roleTable.columns[mapping.TableMapping.role.Id].name;
+            this.R_Name = this.R_Table + "." + mapping.roleTable.columns[mapping.TableMapping.role.Name].name;
+            this.R_IsDeleted = this.R_Table + "." + mapping.roleTable.columns[mapping.TableMapping.role.IsDeleted].name;
+            this.R_CreatedBy = this.R_Table + "." + mapping.roleTable.columns[mapping.TableMapping.role.CreatedBy].name;
+            this.R_CreatedDate = this.R_Table + "." + mapping.roleTable.columns[mapping.TableMapping.role.CreatedDate].name;
+            this.R_DeletedBy = this.R_Table + "." + mapping.roleTable.columns[mapping.TableMapping.role.DeletedBy].name;
+            this.R_DeletedDate = this.R_Table + "." + mapping.roleTable.columns[mapping.TableMapping.role.DeletedDate].name;
+            this.P_Id = this.P_Table + "." + mapping.permissionTable.columns[mapping.TableMapping.permission.Id].name;
+            this.P_IsDeleted = this.P_Table + "." + mapping.permissionTable.columns[mapping.TableMapping.permission.IsDeleted].name;
+            this.P_Path = this.P_Table + "." + mapping.permissionTable.columns[mapping.TableMapping.permission.Path].name;
+            this.P_PathFieldName = mapping.permissionTable.columns[mapping.TableMapping.permission.Path].name;
+            this.P_CreatedBy = this.P_Table + "." + mapping.permissionTable.columns[mapping.TableMapping.permission.CreatedBy].name;
+            this.P_CreatedDate = this.P_Table + "." + mapping.permissionTable.columns[mapping.TableMapping.permission.CreatedDate].name;
+            this.P_DeletedBy = this.P_Table + "." + mapping.permissionTable.columns[mapping.TableMapping.permission.DeletedBy].name;
+            this.P_DeletedDate = this.P_Table + "." + mapping.permissionTable.columns[mapping.TableMapping.permission.DeletedDate].name;
+            this.UR_RoleId = this.UR_Table + "." + mapping.userRoleTable.columns[mapping.TableMapping.userRole.RoleId].name;
+            this.UR_UserId = this.UR_Table + "." + mapping.userRoleTable.columns[mapping.TableMapping.userRole.UserId].name;
+            this.UR_IsDeleted = this.UR_Table + "." + mapping.userRoleTable.columns[mapping.TableMapping.userRole.IsDeleted].name;
+            this.UR_CreatedBy = this.UR_Table + "." + mapping.userRoleTable.columns[mapping.TableMapping.userRole.CreatedBy].name;
+            this.UR_CreatedDate = this.UR_Table + "." + mapping.userRoleTable.columns[mapping.TableMapping.userRole.CreatedDate].name;
+            this.UR_DeletedBy = this.UR_Table + "." + mapping.userRoleTable.columns[mapping.TableMapping.userRole.DeletedBy].name;
+            this.UR_DeletedDate = this.UR_Table + "." + mapping.userRoleTable.columns[mapping.TableMapping.userRole.DeletedDate].name;
+            this.UD_RequestedBy = this.UD_Table + "." + mapping.userDelegationTable.columns[mapping.TableMapping.userDelegation.RequestedBy].name;
+            this.UD_RequestedTo = this.UD_Table + "." + mapping.userDelegationTable.columns[mapping.TableMapping.userDelegation.RequestedTo].name;
+            this.UD_CreatedBy = this.UD_Table + "." + mapping.userDelegationTable.columns[mapping.TableMapping.userDelegation.CreatedBy].name;
+            this.UD_CreatedDate = this.UD_Table + "." + mapping.userDelegationTable.columns[mapping.TableMapping.userDelegation.CreatedDate].name;
+            this.UD_IsDeleted = this.UD_Table + "." + mapping.userDelegationTable.columns[mapping.TableMapping.userDelegation.IsDeleted].name;
+            this.UD_DeletedBy = this.UD_Table + "." + mapping.userDelegationTable.columns[mapping.TableMapping.userDelegation.DeletedBy].name;
+            this.UD_DeletedDate = this.UD_Table + "." + mapping.userDelegationTable.columns[mapping.TableMapping.userDelegation.DeletedDate].name;
+            this.UP_UserId = this.UP_Table + "." + mapping.userPermissionTable.columns[mapping.TableMapping.userPermission.UserId].name;
+            this.UP_IsDeleted = this.UP_Table + "." + mapping.userPermissionTable.columns[mapping.TableMapping.userPermission.IsDeleted].name;
+            this.UP_PermissionId = this.UP_Table + "." + mapping.userPermissionTable.columns[mapping.TableMapping.userPermission.PermissionId].name;
+            this.UP_RelatedName = this.UP_Table + "." + mapping.userPermissionTable.columns[mapping.TableMapping.userPermission.RelatedName].name;
+            this.UP_RelatedId = this.UP_Table + "." + mapping.userPermissionTable.columns[mapping.TableMapping.userPermission.RelatedId].name;
+            this.UP_CreatedBy = this.UP_Table + "." + mapping.userPermissionTable.columns[mapping.TableMapping.userPermission.CreatedBy].name;
+            this.UP_CreatedDate = this.UP_Table + "." + mapping.userPermissionTable.columns[mapping.TableMapping.userPermission.CreatedDate].name;
+            this.UP_DeletedBy = this.UP_Table + "." + mapping.userPermissionTable.columns[mapping.TableMapping.userPermission.DeletedBy].name;
+            this.UP_DeletedDate = this.UP_Table + "." + mapping.userPermissionTable.columns[mapping.TableMapping.userPermission.DeletedDate].name;
+            this.TU_UserId = this.TU_Table + "." + mapping.teamUserTable.columns[mapping.TableMapping.teamUser.UserId].name;
+            this.TU_TeamId = this.TU_Table + "." + mapping.teamUserTable.columns[mapping.TableMapping.teamUser.TeamId].name;
+            this.TU_IsDeleted = this.TU_Table + "." + mapping.teamUserTable.columns[mapping.TableMapping.teamUser.IsDeleted].name;
+            this.TU_CreatedBy = this.TU_Table + "." + mapping.teamUserTable.columns[mapping.TableMapping.teamUser.CreatedBy].name;
+            this.TU_CreatedDate = this.TU_Table + "." + mapping.teamUserTable.columns[mapping.TableMapping.teamUser.CreatedDate].name;
+            this.TU_DeletedBy = this.TU_Table + "." + mapping.teamUserTable.columns[mapping.TableMapping.teamUser.DeletedBy].name;
+            this.TU_DeletedDate = this.TU_Table + "." + mapping.teamUserTable.columns[mapping.TableMapping.teamUser.DeletedDate].name;
+            this.TR_RoleId = this.TR_Table + "." + mapping.teamRoleTable.columns[mapping.TableMapping.teamRole.RoleId].name;
+            this.TR_TeamId = this.TR_Table + "." + mapping.teamRoleTable.columns[mapping.TableMapping.teamRole.TeamId].name;
+            this.TR_IsDeleted = this.TR_Table + "." + mapping.teamRoleTable.columns[mapping.TableMapping.teamRole.IsDeleted].name;
+            this.TR_CreatedBy = this.TR_Table + "." + mapping.teamRoleTable.columns[mapping.TableMapping.teamRole.CreatedBy].name;
+            this.TR_CreatedDate = this.TR_Table + "." + mapping.teamRoleTable.columns[mapping.TableMapping.teamRole.CreatedDate].name;
+            this.TR_DeletedBy = this.TR_Table + "." + mapping.teamRoleTable.columns[mapping.TableMapping.teamRole.DeletedBy].name;
+            this.TR_DeletedDate = this.TR_Table + "." + mapping.teamRoleTable.columns[mapping.TableMapping.teamRole.DeletedDate].name;
+            this.TP_PermissionId = this.TP_Table + "." + mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission.PermissionId].name;
+            this.TP_TeamId = this.TP_Table + "." + mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission.TeamId].name;
+            this.TP_IsDeleted = this.TP_Table + "." + mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission.IsDeleted].name;
+            this.TP_RelatedId = this.TP_Table + "." + mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission.RelatedId].name;
+            this.TP_RelatedName = this.TP_Table + "." + mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission.RelatedName].name;
+            this.TP_CreatedBy = this.TP_Table + "." + mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission.CreatedBy].name;
+            this.TP_CreatedDate = this.TP_Table + "." + mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission.CreatedDate].name;
+            this.TP_DeletedBy = this.TP_Table + "." + mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission.DeletedBy].name;
+            this.TP_DeletedDate = this.TP_Table + "." + mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission.DeletedDate].name;
+
+
+            if (mapping.permissionTable.columns[mapping.TableMapping.permission.Id].type === 'uniqueidentifier') {
                 this.P_NEWID = true;
-                this.P_NEWID_Field = mapping.permissionTable.columns[mapping.TableMapping.permission["Id"]].name;
+                this.P_NEWID_Field = mapping.permissionTable.columns[mapping.TableMapping.permission.Id].name;
             }
-            if (mapping.roleTable.columns[mapping.TableMapping.role["Id"]].type === 'uniqueidentifier') {
+            if (mapping.roleTable.columns[mapping.TableMapping.role.Id].type === 'uniqueidentifier') {
                 this.R_NEWID = true;
-                this.R_NEWID_Field = mapping.roleTable.columns[mapping.TableMapping.role["Id"]].name;
+                this.R_NEWID_Field = mapping.roleTable.columns[mapping.TableMapping.role.Id].name;
             }
-            if (mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission["RoleId"]].type === 'uniqueidentifier') {
+            if (mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission.RoleId].type === 'uniqueidentifier') {
                 this.RP_NEWID = true;
-                this.RP_NEWID_Field = mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission["RoleId"]].name;
+                this.RP_NEWID_Field = mapping.rolePermissionTable.columns[mapping.TableMapping.rolePermission.RoleId].name;
             }
-            if (mapping.userRoleTable.columns[mapping.TableMapping.userRole["Id"]].type === 'uniqueidentifier') {
+            if (mapping.userRoleTable.columns[mapping.TableMapping.userRole.Id].type === 'uniqueidentifier') {
                 this.UR_NEWID = true;
-                this.UR_NEWID_Field = mapping.userRoleTable.columns[mapping.TableMapping.userRole["Id"]].name;
+                this.UR_NEWID_Field = mapping.userRoleTable.columns[mapping.TableMapping.userRole.Id].name;
             }
-            if (mapping.userPermissionTable.columns[mapping.TableMapping.userPermission["Id"]].type === 'uniqueidentifier') {
+            if (mapping.userDelegationTable.columns[mapping.TableMapping.userDelegation.Id].type === 'uniqueidentifier') {
+                this.UD_NEWID = true;
+                this.UD_NEWID_Field = mapping.userDelegationTable.columns[mapping.TableMapping.userDelegation.Id].name;
+            }
+            if (mapping.userPermissionTable.columns[mapping.TableMapping.userPermission.Id].type === 'uniqueidentifier') {
                 this.UP_NEWID = true;
-                this.UP_NEWID_Field = mapping.userPermissionTable.columns[mapping.TableMapping.userPermission["Id"]].name;
+                this.UP_NEWID_Field = mapping.userPermissionTable.columns[mapping.TableMapping.userPermission.Id].name;
             }
-            if (mapping.teamUserTable.columns[mapping.TableMapping.teamUser["Id"]].type === 'uniqueidentifier') {
+            if (mapping.teamUserTable.columns[mapping.TableMapping.teamUser.Id].type === 'uniqueidentifier') {
                 this.TU_NEWID = true;
-                this.TU_NEWID_Field = mapping.teamUserTable.columns[mapping.TableMapping.teamUser["Id"]].name;
+                this.TU_NEWID_Field = mapping.teamUserTable.columns[mapping.TableMapping.teamUser.Id].name;
             }
-            if (mapping.teamRoleTable.columns[mapping.TableMapping.teamRole["Id"]].type === 'uniqueidentifier') {
+            if (mapping.teamRoleTable.columns[mapping.TableMapping.teamRole.Id].type === 'uniqueidentifier') {
                 this.TR_NEWID = true;
-                this.TR_NEWID_Field = mapping.teamRoleTable.columns[mapping.TableMapping.teamRole["Id"]].name;
+                this.TR_NEWID_Field = mapping.teamRoleTable.columns[mapping.TableMapping.teamRole.Id].name;
             }
-            if (mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission["Id"]].type === 'uniqueidentifier') {
+            if (mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission.Id].type === 'uniqueidentifier') {
                 this.TP_NEWID = true;
-                this.TP_NEWID_Field = mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission["Id"]].name;
+                this.TP_NEWID_Field = mapping.teamPermissionTable.columns[mapping.TableMapping.teamPermission.Id].name;
             }
+
         }
     }
     getAnonymousUser(): UserRecord {
@@ -303,7 +394,7 @@ export class PermissionController {
                 if (this.P_NEWID) {
                     record[this.P_NEWID_Field] = uuid();
                 }
-                await this.db(this.P_Table).insert(record).catch(console.error);
+                await this.db(this.P_Table).insert(formatInsertRecord(record)).catch(console.error);
                 return true;
             }
         }
@@ -324,12 +415,39 @@ export class PermissionController {
                 };
                 await this.db(this.P_Table).where({
                     [this.P_Id]: id
-                }).update(record).catch(console.error);
+                }).update(formatInsertRecord(record)).catch(console.error);
                 return true;
             }
         }
         return false;
     }
+    async getPermissions(req: Request): Promise<any[]> {
+        const currentUser = await this.getCurrentUser(req);
+        if (!currentUser.isAnonymous) {
+            var permissionList: any = this.db(this.P_Table).where({
+                [this.P_IsDeleted]: false
+            }).select().catch(console.error);
+            if (permissionList && permissionList.length > 0) {
+                return permissionList;
+            }
+        }
+        return [];
+    }
+
+    async getPermissionByRoleId(req: Request, roleId: string): Promise<any[]> {
+        const currentUser = await this.getCurrentUser(req);
+        if (!currentUser.isAnonymous) {
+            var permissionList: any = this.db(this.RP_Table).where({
+                [this.RP_RoleId]: roleId,
+                [this.RP_IsDeleted]: false
+            }).select().catch(console.error);
+            if (permissionList && permissionList.length > 0) {
+                return permissionList;
+            }
+        }
+        return [];
+    }
+
     async createRole(req: Request, name: string): Promise<Boolean> {
         const currentUser = await this.getCurrentUser(req);
         if (!currentUser.isAnonymous) {
@@ -347,11 +465,34 @@ export class PermissionController {
                 if (this.R_NEWID) {
                     record[this.R_NEWID_Field] = uuid();
                 }
-                await this.db(this.R_Table).insert(record).catch(console.error);
+                await this.db(this.R_Table).insert(formatInsertRecord(record)).catch(console.error);
                 return true;
             }
         }
         return false;
+    }
+    async getRoles(req: Request): Promise<any[]> {
+        const currentUser = await this.getCurrentUser(req);
+        if (!currentUser.isAnonymous) {
+            var roleList: any = this.db(this.R_Table).where({
+                [this.R_IsDeleted]: false
+            }).select().catch(console.error);
+            return roleList;
+        }
+        return [];
+    }
+    async getRole(req: Request, id: string): Promise<any> {
+        const currentUser = await this.getCurrentUser(req);
+        if (!currentUser.isAnonymous) {
+            var roleList: any = this.db(this.R_Table).where({
+                [this.R_Id]: id,
+                [this.R_IsDeleted]: false
+            }).select().catch(console.error);
+            if (roleList && roleList.length > 0) {
+                return roleList[0];
+            }
+        }
+        return null;
     }
     async deleteRole(req: Request, id: string): Promise<Boolean> {
         const currentUser = await this.getCurrentUser(req);
@@ -368,7 +509,7 @@ export class PermissionController {
                 };
                 await this.db(this.R_Table).where({
                     [this.R_Id]: id
-                }).update(record).catch(console.error);
+                }).update(formatInsertRecord(record)).catch(console.error);
                 return true;
             }
         }
@@ -393,7 +534,30 @@ export class PermissionController {
                 if (this.RP_NEWID) {
                     record[this.RP_NEWID_Field] = uuid();
                 }
-                await this.db(this.RP_Table).insert(record).catch(console.error);
+                await this.db(this.RP_Table).insert(formatInsertRecord(record)).catch(console.error);
+                return true;
+            }
+        }
+        return false;
+    }
+    async removeRolePermission(req: Request, roleId: string, permissionId: string): Promise<Boolean> {
+        const currentUser = await this.getCurrentUser(req);
+        if (!currentUser.isAnonymous) {
+            var rolePermissionList: any = this.db(this.RP_Table).where({
+                [this.RP_RoleId]: roleId,
+                [this.RP_PermissionId]: permissionId,
+                [this.RP_IsDeleted]: false
+            }).select().catch(console.error);
+            if (rolePermissionList && rolePermissionList.length > 0) {
+                var record = {
+                    [this.RP_IsDeleted]: true,
+                    [this.RP_DeletedBy]: currentUser.id,
+                    [this.RP_DeletedDate]: new Date()
+                };
+                await this.db(this.RP_Table).where({
+                    [this.RP_RoleId]: roleId,
+                    [this.RP_PermissionId]: permissionId
+                }).update(formatInsertRecord(record)).catch(console.error);
                 return true;
             }
         }
@@ -419,7 +583,7 @@ export class PermissionController {
                 if (this.TR_NEWID) {
                     record[this.TR_NEWID_Field] = uuid();
                 }
-                await this.db(this.TR_Table).insert(record).catch(console.error);
+                await this.db(this.TR_Table).insert(formatInsertRecord(record)).catch(console.error);
                 return true;
             }
         }
@@ -443,7 +607,7 @@ export class PermissionController {
                 await this.db(this.TR_Table).where({
                     [this.TR_TeamId]: teamId,
                     [this.TR_RoleId]: roleId
-                }).update(record).catch(console.error);
+                }).update(formatInsertRecord(record)).catch(console.error);
                 return true;
             }
         }
@@ -468,7 +632,7 @@ export class PermissionController {
                 if (this.TP_NEWID) {
                     record[this.TP_NEWID_Field] = uuid();
                 }
-                await this.db(this.TP_Table).insert(record).catch(console.error);
+                await this.db(this.TP_Table).insert(formatInsertRecord(record)).catch(console.error);
                 return true;
             }
         }
@@ -495,7 +659,7 @@ export class PermissionController {
                 if (this.TP_NEWID) {
                     record[this.TP_NEWID_Field] = uuid();
                 }
-                await this.db(this.TP_Table).insert(record).catch(console.error);
+                await this.db(this.TP_Table).insert(formatInsertRecord(record)).catch(console.error);
                 return true;
             }
         }
@@ -518,7 +682,7 @@ export class PermissionController {
                 await this.db(this.TP_Table).where({
                     [this.TP_TeamId]: teamId,
                     [this.TP_PermissionId]: permissionId
-                }).update(record).catch(console.error);
+                }).update(formatInsertRecord(record)).catch(console.error);
                 return true;
             }
         }
@@ -543,7 +707,7 @@ export class PermissionController {
                     [this.TP_TeamId]: teamId,
                     [this.TP_RelatedName]: related.name,
                     [this.TP_RelatedId]: related.id
-                }).update(record).catch(console.error);
+                }).update(formatInsertRecord(record)).catch(console.error);
                 return true;
             }
         }
@@ -572,10 +736,111 @@ export class PermissionController {
             .where(this.RP_RoleId, roleId)
             .whereIn(this.RP_RoleId, this.db(this.TR_Table).where(this.TR_TeamId, teamId).where(this.TR_IsDeleted, false).select(this.TR_RoleId))
             .where(this.RP_IsDeleted, false)
-            .select(this.P_Path).then(p => p[this.P_Path]).catch(console.error);
+            .select(this.P_Path).then(p => p && p.map(i => i[this.P_PathFieldName])).catch(console.error) as string[];
         return permissions;
     }
-
+    async assignUserToTeam(req: Request, teamId: string, userId: string): Promise<Boolean> {
+        const currentUser = await this.getCurrentUser(req);
+        if (!currentUser.isAnonymous) {
+            var teamUserList: any = this.db(this.TU_Table).where({
+                [this.TU_TeamId]: teamId,
+                [this.TU_UserId]: userId,
+                [this.TU_IsDeleted]: false
+            }).select().catch(console.error);
+            if (!teamUserList || teamUserList.length === 0) {
+                var record = {
+                    [this.TU_TeamId]: teamId,
+                    [this.TU_UserId]: userId,
+                    [this.TU_CreatedBy]: currentUser.id,
+                    [this.TU_CreatedDate]: new Date(),
+                    [this.TU_IsDeleted]: false
+                };
+                if (this.TU_NEWID) {
+                    record[this.TU_NEWID_Field] = uuid();
+                }
+                await this.db(this.TU_Table).insert(formatInsertRecord(record)).catch(console.error);
+                return true;
+            }
+        }
+        return false;
+    }
+    async revokeUserFromTeam(req: Request, teamId: string, userId: string): Promise<Boolean> {
+        const currentUser = await this.getCurrentUser(req);
+        if (!currentUser.isAnonymous) {
+            var teamUserList: any = this.db(this.TU_Table).where({
+                [this.TU_TeamId]: teamId,
+                [this.TU_UserId]: userId,
+                [this.TU_IsDeleted]: false
+            }).select().catch(console.error);
+            if (teamUserList && teamUserList.length > 0) {
+                var record = {
+                    [this.TU_IsDeleted]: true,
+                    [this.TU_DeletedBy]: currentUser.id,
+                    [this.TU_DeletedDate]: new Date()
+                };
+                await this.db(this.TU_Table).where({
+                    [this.TU_TeamId]: teamId,
+                    [this.TU_UserId]: userId
+                }).update(formatInsertRecord(record)).catch(console.error);
+                return true;
+            }
+        }
+        return false;
+    }
+    async getUsersByTeam(teamId: string): Promise<string[]> {
+        const users: string[] = await this.db(this.TU_Table).where({
+            [this.TU_TeamId]: teamId,
+            [this.TU_IsDeleted]: false
+        }).select(this.TU_UserId).then(p => p.map(r => r[this.TU_UserId])).catch(console.error) as string[];
+        return users;
+    }
+    async assignUserDelegation(req: Request, requestedBy: UserRecord, requestedTo: UserRecord): Promise<Boolean> {
+        const currentUser = await this.getCurrentUser(req);
+        if (!currentUser.isAnonymous) {
+            var delegationList = await this.db(this.UD_Table).where({
+                [this.UD_RequestedBy]: requestedBy.id,
+                [this.UD_RequestedTo]: requestedTo.id,
+                [this.UD_IsDeleted]: false
+            }).select().catch(console.error);
+            if (!delegationList || delegationList.length === 0) {
+                var record = {
+                    [this.UD_RequestedBy]: requestedBy.id,
+                    [this.UD_RequestedTo]: requestedTo.id,
+                    [this.UD_CreatedBy]: currentUser.id,
+                    [this.UD_CreatedDate]: new Date(),
+                    [this.UD_IsDeleted]: false
+                };
+                if (this.UD_NEWID) {
+                    record[this.UD_NEWID_Field] = uuid();
+                }
+                await this.db(this.UD_Table).insert(formatInsertRecord(record)).catch(console.error);
+                return true;
+            }
+        }
+        return false;
+    }
+    async revokeUserDelegation(req: Request, requestedBy: UserRecord, requestedTo: UserRecord): Promise<Boolean> {
+        const currentUser = await this.getCurrentUser(req);
+        if (!currentUser.isAnonymous) {
+            var delegationList = await this.db(this.UD_Table).where({
+                [this.UD_RequestedBy]: requestedBy.id,
+                [this.UD_RequestedTo]: requestedTo.id,
+                [this.UD_IsDeleted]: false
+            }).select().catch(console.error);
+            if (delegationList && delegationList.length > 0) {
+                await this.db(this.UD_Table).where({
+                    [this.UD_RequestedBy]: requestedBy.id,
+                    [this.UD_RequestedTo]: requestedTo.id,
+                }).update({
+                    [this.UD_IsDeleted]: true,
+                    [this.UD_DeletedBy]: currentUser.id,
+                    [this.UD_DeletedDate]: new Date()
+                }).catch(console.error);
+                return true;
+            }
+        }
+        return false;
+    }
     async assignRoleToUser(req: Request, user: UserRecord, roleId: string): Promise<string> {
         var id: string = null;
         if (!user.isAnonymous) {
@@ -592,7 +857,7 @@ export class PermissionController {
             if (currentUser) {
                 record[this.UR_CreatedBy] = currentUser.id;
             }
-            await this.db(this.UR_Table).insert(record).catch(console.error);
+            await this.db(this.UR_Table).insert(formatInsertRecord(record)).catch(console.error);
         }
         return id;
     }
@@ -642,7 +907,7 @@ export class PermissionController {
                 .where(this.RP_RoleId, roleId)
                 .whereIn(this.RP_RoleId, this.db(this.UR_Table).where(this.UR_UserId, user.id).where(this.UR_IsDeleted, false).select(this.UR_RoleId))
                 .where(this.RP_IsDeleted, false)
-                .select(this.P_Path).then(p => p[this.P_Path]).catch(console.error);
+                .select(this.P_Path).then(p => p && p.map(i => i[this.P_PathFieldName])).catch(console.error) as string[];
             return permissions;
         }
         return [];
@@ -664,6 +929,8 @@ export class PermissionController {
             if (currentUser) {
                 record[this.UP_CreatedBy] = currentUser.id;
             }
+            await this.db(this.UP_Table).insert(formatInsertRecord(record)).catch(console.error);
+
         }
         return id;
     }
@@ -723,13 +990,17 @@ export class PermissionController {
     }
 
     async use(req: Request, res: Response, next: NextFunction) {
+        if (req.method.toUpperCase() === "OPTIONS") {
+            next();
+            return;
+        }
         var isGranted: Boolean = false;
         var user: UserRecord = await this.config.userResolver(req);
         if (user == null) {
             user = this.getAnonymousUser();
         }
-        var urlParts: string[] = (req.originalUrl || req.url).split('/');
-        if (urlParts.length > 0) {
+        var urlParts: string[] = (req.originalUrl || req.url).split('/').map(p => p.trim()).filter(p => p.length > 0);
+        if (urlParts) {
             var permissionContext: PermissionContext = new PermissionContext(req, user, new PermissionRequest(urlParts));
             isGranted = await this.check(permissionContext);
         }
@@ -747,54 +1018,99 @@ export class PermissionController {
             });
         }
     }
-    async check(ctx: PermissionContext): Promise<Boolean> {
+
+    async check(ctx: PermissionContext, relatedRecord?: RelatedRecord, isRecordPassed?: Boolean): Promise<Boolean> {
+        if (this.CustomPermission) {
+            if (await this.CustomPermission(ctx)) {
+                return true;
+            }
+        }
+
         const user = ctx.user;
-        var record: RelatedRecord = this.config.recordResolver ? await this.config.recordResolver(ctx.request.urlParts, ctx.req.body) : null;
+        var record: RelatedRecord = relatedRecord;
+        if (isRecordPassed !== true) record = this.config.recordResolver ? await this.config.recordResolver(ctx.request.urlParts, ctx.req) : null;
+
+        if (ctx.req && (ctx.req as any).session) {
+            var d = (ctx.req as any).session.fastapi_ap_permissions_d;
+            if (d && (new Date().valueOf() - d.valueOf()) / 1000.0 < 60.0) {
+                (ctx.req as any).session.fastapi_ap_permissions_d = new Date();
+                var permissions = (ctx.req as any).session.fastapi_ap_permissions as string[];
+                if (permissions && permissions.length > 0) {
+                    for (var p of permissions) {
+                        if (matchPermission(ctx.request.urlParts, p)) {
+                            return true;
+                        }
+                    }
+                }
+
+                if (!record) return false;
+            }
+            else {
+                (ctx.req as any).session.fastapi_ap_permissions = [];
+                (ctx.req as any).session.fastapi_ap_permissions_d = 0;
+            }
+        }
+
 
         const db = this.db;
         // Stage1: Basic Permission
         {
             var permissions: string[] = await db(this.RP_Table)
-                .join(db(this.R_Table).where(this.R_IsDeleted, false), this.R_Id, this.RP_RoleId)
-                .join(db(this.P_Table).where(this.P_IsDeleted, false), this.P_Id, this.RP_PermissionId)
+                .join(db(this.R_Table).where(this.R_IsDeleted, false).as(this.R_Table), this.R_Id, this.RP_RoleId)
+                .join(db(this.P_Table).where(this.P_IsDeleted, false).as(this.P_Table), this.P_Id, this.RP_PermissionId)
                 .whereNotNull(this.R_Id)
                 .whereNotNull(this.P_Id)
                 .whereIn(this.RP_RoleId, db(this.UR_Table).where(this.UR_UserId, user.id).where(this.UR_IsDeleted, false).select(this.UR_RoleId))
                 .where(this.RP_IsDeleted, false)
-                .select(this.P_Path).then(p => p[this.P_Path]).catch(console.error);
-            for (var p of permissions) {
-                if (matchPermission(ctx.request.urlParts, p)) {
-                    return true;
+                .select(this.P_Path).then(p => p && p.map(i => i[this.P_PathFieldName])).catch(console.error) as string[];
+            if (ctx.req && (ctx.req as any).session) {
+                (ctx.req as any).session.fastapi_ap_permissions = ([...((ctx.req as any).session.fastapi_ap_permissions || []), ...(permissions || [])]).filter((x, i, a) => a.indexOf(x) === i);
+                (ctx.req as any).session.fastapi_ap_permissions_d = new Date();
+            }
+            if (permissions && permissions.length > 0) {
+                for (var p of permissions) {
+                    if (matchPermission(ctx.request.urlParts, p)) {
+                        return true;
+                    }
                 }
             }
         }
-
-        // Stage2: User Related Permission
-        if (record) {
-            var permissions: string[] = await db(this.UP_Table)
-                .join(db(this.P_Table).where(this.P_IsDeleted, false), this.P_Id, this.UP_PermissionId)
-                .where(`[${this.UP_Table}].[${this.UP_UserId}]`, user.id)
-                .where(`[${this.UP_Table}].[${this.UP_RelatedName}]`, record.name)
-                .where(`[${this.UP_Table}].[${this.UP_RelatedId}]`, record.id)
-                .where(`[${this.UP_Table}].[${this.UP_IsDeleted}]`, false)
-                .select(this.P_Path).limit(1).then(p => p[this.P_Path]).catch(console.error);
-            for (var p of permissions) {
-                if (matchPermission(ctx.request.urlParts, p)) {
-                    return true;
+        if (this.config.migration.config.userRelatedPermissionEnabled || this.config.migration.config.userPermissionEnabled) {
+            // Stage2: User Related Permission
+            if (record && this.config.migration.config.userRelatedPermissionEnabled) {
+                var permissions: string[] = await db(this.UP_Table)
+                    .join(db(this.P_Table).where(this.P_IsDeleted, false).as(this.P_Table), this.P_Id, this.UP_PermissionId)
+                    .where(this.UP_UserId, user.id)
+                    .where(this.UP_RelatedName, record.name)
+                    .where(this.UP_RelatedId, record.id)
+                    .where(this.UP_IsDeleted, false)
+                    .select(this.P_Path).then(p => p && p.map(i => i[this.P_PathFieldName])).catch(console.error) as string[];
+                if (permissions && permissions.length > 0) {
+                    for (var p of permissions) {
+                        if (matchPermission(ctx.request.urlParts, p)) {
+                            return true;
+                        }
+                    }
                 }
             }
-        }
-        else {
-            var permissions: string[] = await db(this.UP_Table)
-                .join(db(this.P_Table).where(this.P_IsDeleted, false), this.P_Id, this.UP_PermissionId)
-                .where(`[${this.UP_Table}].[${this.UP_UserId}]`, user.id)
-                .whereNull(`[${this.UP_Table}].[${this.UP_RelatedName}]`)
-                .whereNull(`[${this.UP_Table}].[${this.UP_RelatedId}]`)
-                .where(`[${this.UP_Table}].[${this.UP_IsDeleted}]`, false)
-                .select(this.P_Path).limit(1).then(p => p[this.P_Path]).catch(console.error);
-            for (var p of permissions) {
-                if (matchPermission(ctx.request.urlParts, p)) {
-                    return true;
+            else if (this.config.migration.config.userPermissionEnabled) {
+                var permissions: string[] = await db(this.UP_Table)
+                    .join(db(this.P_Table).where(this.P_IsDeleted, false).as(this.P_Table), this.P_Id, this.UP_PermissionId)
+                    .where(this.UP_UserId, user.id)
+                    .whereNull(this.UP_RelatedName)
+                    .whereNull(this.UP_RelatedId)
+                    .where(this.UP_IsDeleted, false)
+                    .select(this.P_Path).then(p => p && p.map(i => i[this.P_PathFieldName])).catch(console.error) as string[];
+                if (ctx.req && (ctx.req as any).session) {
+                    (ctx.req as any).session.fastapi_ap_permissions = ([...((ctx.req as any).session.fastapi_ap_permissions || []), ...(permissions || [])]).filter((x, i, a) => a.indexOf(x) === i);
+                    (ctx.req as any).session.fastapi_ap_permissions_d = new Date();
+                }
+                if (permissions && permissions.length > 0) {
+                    for (var p of permissions) {
+                        if (matchPermission(ctx.request.urlParts, p)) {
+                            return true;
+                        }
+                    }
                 }
             }
         }
@@ -804,44 +1120,61 @@ export class PermissionController {
             .where(this.TU_UserId, user.id)
             .where(this.TU_IsDeleted, false)
             .select(this.TU_TeamId).then(p => p[this.TU_TeamId]).catch(console.error);
-        {
-            var permissions: string[] = await db(this.P_Table)
-                .whereIn(this.RP_RoleId, db(this.TR_Table).whereIn(this.TR_TeamId, teams).where(this.TR_IsDeleted, false).select(this.TR_RoleId))
-                .where(this.RP_IsDeleted, false)
-                .select().then(p => p[this.P_Path]).catch(console.error);
-            for (var p of permissions) {
-                if (matchPermission(ctx.request.urlParts, p)) {
-                    return true;
+        if (teams && teams.length > 0) {
+            {
+                var permissions: string[] = await db(this.P_Table)
+                    .whereIn(this.RP_RoleId, db(this.TR_Table).whereIn(this.TR_TeamId, teams).where(this.TR_IsDeleted, false).select(this.TR_RoleId))
+                    .where(this.RP_IsDeleted, false)
+                    .select().then(p => p && p.map(i => i[this.P_PathFieldName])).catch(console.error) as string[];
+                if (ctx.req && (ctx.req as any).session) {
+                    (ctx.req as any).session.fastapi_ap_permissions = ([...((ctx.req as any).session.fastapi_ap_permissions || []), ...(permissions || [])]).filter((x, i, a) => a.indexOf(x) === i);
+                    (ctx.req as any).session.fastapi_ap_permissions_d = new Date();
+                }
+                if (permissions && permissions.length > 0) {
+                    for (var p of permissions) {
+                        if (matchPermission(ctx.request.urlParts, p)) {
+                            return true;
+                        }
+                    }
                 }
             }
-        }
-
-        // Stage4: Team Related Permission
-        if (record) {
-            var permissions: string[] = await db(this.TP_Table)
-                .join(db(this.P_Table).where(this.P_IsDeleted, false), this.P_Id, this.TP_PermissionId)
-                .whereIn(this.TP_TeamId, teams)
-                .where(`[${this.TP_Table}].[${this.TP_RelatedName}]`, record.name)
-                .where(`[${this.TP_Table}].[${this.TP_RelatedId}]`, record.id)
-                .where(`[${this.TP_Table}].[${this.TP_IsDeleted}]`, false)
-                .select(this.P_Path).limit(1).then(p => p[this.P_Path]).catch(console.error);
-            for (var p of permissions) {
-                if (matchPermission(ctx.request.urlParts, p)) {
-                    return true;
+            if (this.config.migration.config.teamRelatedPermissionEnabled || this.config.migration.config.teamPermissionEnabled) {
+                // Stage4: Team Related Permission
+                if (record && this.config.migration.config.teamRelatedPermissionEnabled) {
+                    var permissions: string[] = await db(this.TP_Table)
+                        .join(db(this.P_Table).where(this.P_IsDeleted, false).as(this.P_Table), this.P_Id, this.TP_PermissionId)
+                        .whereIn(this.TP_TeamId, teams)
+                        .where(this.TP_RelatedName, record.name)
+                        .where(this.TP_RelatedId, record.id)
+                        .where(this.TP_IsDeleted, false)
+                        .select(this.P_Path).then(p => p && p.map(i => i[this.P_PathFieldName])).catch(console.error) as string[];
+                    if (permissions && permissions.length > 0) {
+                        for (var p of permissions) {
+                            if (matchPermission(ctx.request.urlParts, p)) {
+                                return true;
+                            }
+                        }
+                    }
                 }
-            }
-        }
-        else {
-            var permissions: string[] = await db(this.UP_Table)
-                .join(db(this.P_Table).where(this.P_IsDeleted, false), this.P_Id, this.TP_PermissionId)
-                .whereIn(this.TP_TeamId, teams)
-                .whereNull(`[${this.TP_Table}].[${this.TP_RelatedName}]`)
-                .whereNull(`[${this.TP_Table}].[${this.TP_RelatedId}]`)
-                .where(`[${this.TP_Table}].[${this.TP_IsDeleted}]`, false)
-                .select(this.P_Path).limit(1).then(p => p[this.P_Path]).catch(console.error);
-            for (var p of permissions) {
-                if (matchPermission(ctx.request.urlParts, p)) {
-                    return true;
+                else if (this.config.migration.config.teamPermissionEnabled) {
+                    var permissions: string[] = await db(this.UP_Table)
+                        .join(db(this.P_Table).where(this.P_IsDeleted, false).as(this.P_Table), this.P_Id, this.TP_PermissionId)
+                        .whereIn(this.TP_TeamId, teams)
+                        .whereNull(this.TP_RelatedName)
+                        .whereNull(this.TP_RelatedId)
+                        .where(this.TP_IsDeleted, false)
+                        .select(this.P_Path).then(p => p && p.map(i => i[this.P_PathFieldName])).catch(console.error) as string[];
+                    if (ctx.req && (ctx.req as any).session) {
+                        (ctx.req as any).session.fastapi_ap_permissions = ([...((ctx.req as any).session.fastapi_ap_permissions || []), ...(permissions || [])]).filter((x, i, a) => a.indexOf(x) === i);
+                        (ctx.req as any).session.fastapi_ap_permissions_d = new Date();
+                    }
+                    if (permissions && permissions.length > 0) {
+                        for (var p of permissions) {
+                            if (matchPermission(ctx.request.urlParts, p)) {
+                                return true;
+                            }
+                        }
+                    }
                 }
             }
         }

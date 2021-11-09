@@ -1,1 +1,0 @@
-{"version":3,"file":"BasicPermission.d.ts","sourceRoot":"","sources":["../../src/types/BasicPermission.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,iBAAiB,EAAE,MAAM,qBAAqB,CAAC;AAGxD,qBAAa,eAAgB,SAAQ,iBAAiB;IAClD,IAAW,IAAI,IAAI,MAAM,CAExB;IACD,IAAW,IAAI,CAAC,KAAK,EAAE,MAAM,EAE5B;gBACW,IAAI,EAAE,MAAM;CAI3B"}

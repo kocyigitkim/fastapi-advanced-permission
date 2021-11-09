@@ -19,124 +19,110 @@ var MigrationTableDefinition = /** @class */ (function () {
     return MigrationTableDefinition;
 }());
 exports.MigrationTableDefinition = MigrationTableDefinition;
-var TableMapping;
-(function (TableMapping) {
-    var PermissionMapping;
-    (function (PermissionMapping) {
-        PermissionMapping[PermissionMapping["Id"] = 0] = "Id";
-        PermissionMapping[PermissionMapping["Path"] = 1] = "Path";
-        PermissionMapping[PermissionMapping["CreatedBy"] = 2] = "CreatedBy";
-        PermissionMapping[PermissionMapping["CreatedDate"] = 3] = "CreatedDate";
-        PermissionMapping[PermissionMapping["ModifiedBy"] = 4] = "ModifiedBy";
-        PermissionMapping[PermissionMapping["ModifiedDate"] = 5] = "ModifiedDate";
-        PermissionMapping[PermissionMapping["IsDeleted"] = 6] = "IsDeleted";
-        PermissionMapping[PermissionMapping["DeletedBy"] = 7] = "DeletedBy";
-        PermissionMapping[PermissionMapping["DeletedDate"] = 8] = "DeletedDate";
-    })(PermissionMapping = TableMapping.PermissionMapping || (TableMapping.PermissionMapping = {}));
-    var RoleMapping;
-    (function (RoleMapping) {
-        RoleMapping[RoleMapping["Id"] = 0] = "Id";
-        RoleMapping[RoleMapping["Name"] = 1] = "Name";
-        RoleMapping[RoleMapping["CreatedBy"] = 2] = "CreatedBy";
-        RoleMapping[RoleMapping["CreatedDate"] = 3] = "CreatedDate";
-        RoleMapping[RoleMapping["ModifiedBy"] = 4] = "ModifiedBy";
-        RoleMapping[RoleMapping["ModifiedDate"] = 5] = "ModifiedDate";
-        RoleMapping[RoleMapping["IsDeleted"] = 6] = "IsDeleted";
-        RoleMapping[RoleMapping["DeletedBy"] = 7] = "DeletedBy";
-        RoleMapping[RoleMapping["DeletedDate"] = 8] = "DeletedDate";
-    })(RoleMapping = TableMapping.RoleMapping || (TableMapping.RoleMapping = {}));
-    var RolePermissionMapping;
-    (function (RolePermissionMapping) {
-        RolePermissionMapping[RolePermissionMapping["Id"] = 0] = "Id";
-        RolePermissionMapping[RolePermissionMapping["RoleId"] = 1] = "RoleId";
-        RolePermissionMapping[RolePermissionMapping["PermissionId"] = 2] = "PermissionId";
-        RolePermissionMapping[RolePermissionMapping["CreatedBy"] = 3] = "CreatedBy";
-        RolePermissionMapping[RolePermissionMapping["CreatedDate"] = 4] = "CreatedDate";
-        RolePermissionMapping[RolePermissionMapping["ModifiedBy"] = 5] = "ModifiedBy";
-        RolePermissionMapping[RolePermissionMapping["ModifiedDate"] = 6] = "ModifiedDate";
-        RolePermissionMapping[RolePermissionMapping["IsDeleted"] = 7] = "IsDeleted";
-        RolePermissionMapping[RolePermissionMapping["DeletedBy"] = 8] = "DeletedBy";
-        RolePermissionMapping[RolePermissionMapping["DeletedDate"] = 9] = "DeletedDate";
-    })(RolePermissionMapping = TableMapping.RolePermissionMapping || (TableMapping.RolePermissionMapping = {}));
-    var UserMapping;
-    (function (UserMapping) {
-        UserMapping[UserMapping["Id"] = 0] = "Id";
-    })(UserMapping = TableMapping.UserMapping || (TableMapping.UserMapping = {}));
-    var UserDeputationMapping;
-    (function (UserDeputationMapping) {
-        UserDeputationMapping[UserDeputationMapping["Id"] = 0] = "Id";
-        UserDeputationMapping[UserDeputationMapping["RequestedBy"] = 1] = "RequestedBy";
-        UserDeputationMapping[UserDeputationMapping["RequestedTo"] = 2] = "RequestedTo";
-        UserDeputationMapping[UserDeputationMapping["CreatedBy"] = 3] = "CreatedBy";
-        UserDeputationMapping[UserDeputationMapping["CreatedDate"] = 4] = "CreatedDate";
-        UserDeputationMapping[UserDeputationMapping["IsDeleted"] = 5] = "IsDeleted";
-        UserDeputationMapping[UserDeputationMapping["DeletedBy"] = 6] = "DeletedBy";
-        UserDeputationMapping[UserDeputationMapping["DeletedDate"] = 7] = "DeletedDate";
-    })(UserDeputationMapping = TableMapping.UserDeputationMapping || (TableMapping.UserDeputationMapping = {}));
-    var UserRoleMapping;
-    (function (UserRoleMapping) {
-        UserRoleMapping[UserRoleMapping["Id"] = 0] = "Id";
-        UserRoleMapping[UserRoleMapping["UserId"] = 1] = "UserId";
-        UserRoleMapping[UserRoleMapping["RoleId"] = 2] = "RoleId";
-        UserRoleMapping[UserRoleMapping["CreatedBy"] = 3] = "CreatedBy";
-        UserRoleMapping[UserRoleMapping["CreatedDate"] = 4] = "CreatedDate";
-        UserRoleMapping[UserRoleMapping["IsDeleted"] = 5] = "IsDeleted";
-        UserRoleMapping[UserRoleMapping["DeletedBy"] = 6] = "DeletedBy";
-        UserRoleMapping[UserRoleMapping["DeletedDate"] = 7] = "DeletedDate";
-    })(UserRoleMapping = TableMapping.UserRoleMapping || (TableMapping.UserRoleMapping = {}));
-    var UserPermissionMapping;
-    (function (UserPermissionMapping) {
-        UserPermissionMapping[UserPermissionMapping["Id"] = 0] = "Id";
-        UserPermissionMapping[UserPermissionMapping["UserId"] = 1] = "UserId";
-        UserPermissionMapping[UserPermissionMapping["PermissionId"] = 2] = "PermissionId";
-        UserPermissionMapping[UserPermissionMapping["RelatedName"] = 3] = "RelatedName";
-        UserPermissionMapping[UserPermissionMapping["RelatedId"] = 4] = "RelatedId";
-        UserPermissionMapping[UserPermissionMapping["CreatedBy"] = 5] = "CreatedBy";
-        UserPermissionMapping[UserPermissionMapping["CreatedDate"] = 6] = "CreatedDate";
-        UserPermissionMapping[UserPermissionMapping["IsDeleted"] = 7] = "IsDeleted";
-        UserPermissionMapping[UserPermissionMapping["DeletedBy"] = 8] = "DeletedBy";
-        UserPermissionMapping[UserPermissionMapping["DeletedDate"] = 9] = "DeletedDate";
-    })(UserPermissionMapping = TableMapping.UserPermissionMapping || (TableMapping.UserPermissionMapping = {}));
-    var TeamMapping;
-    (function (TeamMapping) {
-        TeamMapping[TeamMapping["Id"] = 0] = "Id";
-    })(TeamMapping = TableMapping.TeamMapping || (TableMapping.TeamMapping = {}));
-    var TeamUserMapping;
-    (function (TeamUserMapping) {
-        TeamUserMapping[TeamUserMapping["Id"] = 0] = "Id";
-        TeamUserMapping[TeamUserMapping["TeamId"] = 1] = "TeamId";
-        TeamUserMapping[TeamUserMapping["UserId"] = 2] = "UserId";
-        TeamUserMapping[TeamUserMapping["CreatedBy"] = 3] = "CreatedBy";
-        TeamUserMapping[TeamUserMapping["CreatedDate"] = 4] = "CreatedDate";
-        TeamUserMapping[TeamUserMapping["IsDeleted"] = 5] = "IsDeleted";
-        TeamUserMapping[TeamUserMapping["DeletedBy"] = 6] = "DeletedBy";
-        TeamUserMapping[TeamUserMapping["DeletedDate"] = 7] = "DeletedDate";
-    })(TeamUserMapping = TableMapping.TeamUserMapping || (TableMapping.TeamUserMapping = {}));
-    var TeamRoleMapping;
-    (function (TeamRoleMapping) {
-        TeamRoleMapping[TeamRoleMapping["Id"] = 0] = "Id";
-        TeamRoleMapping[TeamRoleMapping["TeamId"] = 1] = "TeamId";
-        TeamRoleMapping[TeamRoleMapping["RoleId"] = 2] = "RoleId";
-        TeamRoleMapping[TeamRoleMapping["CreatedBy"] = 3] = "CreatedBy";
-        TeamRoleMapping[TeamRoleMapping["CreatedDate"] = 4] = "CreatedDate";
-        TeamRoleMapping[TeamRoleMapping["IsDeleted"] = 5] = "IsDeleted";
-        TeamRoleMapping[TeamRoleMapping["DeletedBy"] = 6] = "DeletedBy";
-        TeamRoleMapping[TeamRoleMapping["DeletedDate"] = 7] = "DeletedDate";
-    })(TeamRoleMapping = TableMapping.TeamRoleMapping || (TableMapping.TeamRoleMapping = {}));
-    var TeamPermissionMapping;
-    (function (TeamPermissionMapping) {
-        TeamPermissionMapping[TeamPermissionMapping["Id"] = 0] = "Id";
-        TeamPermissionMapping[TeamPermissionMapping["TeamId"] = 1] = "TeamId";
-        TeamPermissionMapping[TeamPermissionMapping["PermissionId"] = 2] = "PermissionId";
-        TeamPermissionMapping[TeamPermissionMapping["RelatedName"] = 3] = "RelatedName";
-        TeamPermissionMapping[TeamPermissionMapping["RelatedId"] = 4] = "RelatedId";
-        TeamPermissionMapping[TeamPermissionMapping["CreatedBy"] = 5] = "CreatedBy";
-        TeamPermissionMapping[TeamPermissionMapping["CreatedDate"] = 6] = "CreatedDate";
-        TeamPermissionMapping[TeamPermissionMapping["IsDeleted"] = 7] = "IsDeleted";
-        TeamPermissionMapping[TeamPermissionMapping["DeletedBy"] = 8] = "DeletedBy";
-        TeamPermissionMapping[TeamPermissionMapping["DeletedDate"] = 9] = "DeletedDate";
-    })(TeamPermissionMapping = TableMapping.TeamPermissionMapping || (TableMapping.TeamPermissionMapping = {}));
-})(TableMapping = exports.TableMapping || (exports.TableMapping = {}));
+var TableMapping = /** @class */ (function () {
+    function TableMapping() {
+    }
+    TableMapping.PermissionMapping = {
+        Id: 0,
+        Path: 1,
+        CreatedBy: 2,
+        CreatedDate: 3,
+        IsDeleted: 4,
+        DeletedBy: 5,
+        DeletedDate: 6
+    };
+    TableMapping.RoleMapping = {
+        Id: 0,
+        Name: 1,
+        CreatedBy: 2,
+        CreatedDate: 3,
+        IsDeleted: 4,
+        DeletedBy: 5,
+        DeletedDate: 6
+    };
+    TableMapping.RolePermissionMapping = {
+        Id: 0,
+        RoleId: 1,
+        PermissionId: 2,
+        CreatedBy: 3,
+        CreatedDate: 4,
+        IsDeleted: 5,
+        DeletedBy: 6,
+        DeletedDate: 7
+    };
+    TableMapping.UserMapping = {
+        Id: 0
+    };
+    TableMapping.UserDelegationMapping = {
+        Id: 0,
+        RequestedBy: 1,
+        RequestedTo: 2,
+        CreatedBy: 3,
+        CreatedDate: 4,
+        IsDeleted: 5,
+        DeletedBy: 6,
+        DeletedDate: 7
+    };
+    TableMapping.UserRoleMapping = {
+        Id: 0,
+        UserId: 1,
+        RoleId: 2,
+        CreatedBy: 3,
+        CreatedDate: 4,
+        IsDeleted: 5,
+        DeletedBy: 6,
+        DeletedDate: 7
+    };
+    TableMapping.UserPermissionMapping = {
+        Id: 0,
+        UserId: 1,
+        PermissionId: 2,
+        RelatedName: 3,
+        RelatedId: 4,
+        CreatedBy: 5,
+        CreatedDate: 6,
+        IsDeleted: 7,
+        DeletedBy: 8,
+        DeletedDate: 9
+    };
+    TableMapping.TeamMapping = {
+        Id: 0
+    };
+    TableMapping.TeamUserMapping = {
+        Id: 0,
+        TeamId: 1,
+        UserId: 2,
+        CreatedBy: 3,
+        CreatedDate: 4,
+        IsDeleted: 5,
+        DeletedBy: 6,
+        DeletedDate: 7
+    };
+    TableMapping.TeamRoleMapping = {
+        Id: 0,
+        TeamId: 1,
+        RoleId: 2,
+        CreatedBy: 3,
+        CreatedDate: 4,
+        IsDeleted: 5,
+        DeletedBy: 6,
+        DeletedDate: 7
+    };
+    TableMapping.TeamPermissionMapping = {
+        Id: 0,
+        TeamId: 1,
+        PermissionId: 2,
+        RelatedName: 3,
+        RelatedId: 4,
+        CreatedBy: 5,
+        CreatedDate: 6,
+        IsDeleted: 7,
+        DeletedBy: 8,
+        DeletedDate: 9
+    };
+    return TableMapping;
+}());
+exports.TableMapping = TableMapping;
 var MigrationTables = /** @class */ (function () {
     function MigrationTables() {
     }
@@ -145,8 +131,6 @@ var MigrationTables = /** @class */ (function () {
         new MigrationColumnDefinition("Path", "nvarchar(MAX)", false, null),
         new MigrationColumnDefinition("CreatedBy", "uniqueidentifier", false, "User.Id"),
         new MigrationColumnDefinition("CreatedDate", "datetime", false, null),
-        new MigrationColumnDefinition("ModifiedBy", "uniqueidentifier", false, "User.Id"),
-        new MigrationColumnDefinition("ModifiedDate", "datetime", false, null),
         new MigrationColumnDefinition("IsDeleted", "bit", false, null),
         new MigrationColumnDefinition("DeletedBy", "uniqueidentifier", false, "User.Id"),
         new MigrationColumnDefinition("DeletedDate", "datetime", false, null)
@@ -156,8 +140,6 @@ var MigrationTables = /** @class */ (function () {
         new MigrationColumnDefinition("Name", "nvarchar(MAX)", false, null),
         new MigrationColumnDefinition("CreatedBy", "uniqueidentifier", false, "User.Id"),
         new MigrationColumnDefinition("CreatedDate", "datetime", false, null),
-        new MigrationColumnDefinition("ModifiedBy", "uniqueidentifier", false, "User.Id"),
-        new MigrationColumnDefinition("ModifiedDate", "datetime", false, null),
         new MigrationColumnDefinition("IsDeleted", "bit", false, null),
         new MigrationColumnDefinition("DeletedBy", "uniqueidentifier", false, "User.Id"),
         new MigrationColumnDefinition("DeletedDate", "datetime", false, null)
@@ -168,8 +150,6 @@ var MigrationTables = /** @class */ (function () {
         new MigrationColumnDefinition("PermissionId", "uniqueidentifier", false, "Permission.Id"),
         new MigrationColumnDefinition("CreatedBy", "uniqueidentifier", false, "User.Id"),
         new MigrationColumnDefinition("CreatedDate", "datetime", false, null),
-        new MigrationColumnDefinition("ModifiedBy", "uniqueidentifier", false, "User.Id"),
-        new MigrationColumnDefinition("ModifiedDate", "datetime", false, null),
         new MigrationColumnDefinition("IsDeleted", "bit", false, null),
         new MigrationColumnDefinition("DeletedBy", "uniqueidentifier", false, "User.Id"),
         new MigrationColumnDefinition("DeletedDate", "datetime", false, null)
@@ -177,7 +157,7 @@ var MigrationTables = /** @class */ (function () {
     MigrationTables.DefaultUserTable = new MigrationTableDefinition("User", [
         new MigrationColumnDefinition("Id", "uniqueidentifier", true, null)
     ]);
-    MigrationTables.DefaultUserDeputation = new MigrationTableDefinition("UserDeputation", [
+    MigrationTables.DefaultUserDelegation = new MigrationTableDefinition("UserDelegation", [
         new MigrationColumnDefinition("Id", "uniqueidentifier", true, null),
         new MigrationColumnDefinition("RequestedBy", "uniqueidentifier", false, "User.Id"),
         new MigrationColumnDefinition("RequestedTo", "uniqueidentifier", false, "User.Id"),
@@ -248,23 +228,23 @@ var MigrationTables = /** @class */ (function () {
 }());
 exports.MigrationTables = MigrationTables;
 var MigrationTableMapping = /** @class */ (function () {
-    function MigrationTableMapping(permission, role, rolePermission, user, userDeputation, userRole, userPermission, team, teamUser, teamRole, teamPermission) {
-        if (permission === void 0) { permission = null; }
-        if (role === void 0) { role = null; }
-        if (rolePermission === void 0) { rolePermission = null; }
-        if (user === void 0) { user = null; }
-        if (userDeputation === void 0) { userDeputation = null; }
-        if (userRole === void 0) { userRole = null; }
-        if (userPermission === void 0) { userPermission = null; }
-        if (team === void 0) { team = null; }
-        if (teamUser === void 0) { teamUser = null; }
-        if (teamRole === void 0) { teamRole = null; }
-        if (teamPermission === void 0) { teamPermission = null; }
+    function MigrationTableMapping(permission, role, rolePermission, user, userDelegation, userRole, userPermission, team, teamUser, teamRole, teamPermission) {
+        if (permission === void 0) { permission = TableMapping.PermissionMapping; }
+        if (role === void 0) { role = TableMapping.RoleMapping; }
+        if (rolePermission === void 0) { rolePermission = TableMapping.RolePermissionMapping; }
+        if (user === void 0) { user = TableMapping.UserMapping; }
+        if (userDelegation === void 0) { userDelegation = TableMapping.UserDelegationMapping; }
+        if (userRole === void 0) { userRole = TableMapping.UserRoleMapping; }
+        if (userPermission === void 0) { userPermission = TableMapping.UserPermissionMapping; }
+        if (team === void 0) { team = TableMapping.TeamMapping; }
+        if (teamUser === void 0) { teamUser = TableMapping.TeamUserMapping; }
+        if (teamRole === void 0) { teamRole = TableMapping.TeamRoleMapping; }
+        if (teamPermission === void 0) { teamPermission = TableMapping.TeamPermissionMapping; }
         this.permission = permission;
         this.role = role;
         this.rolePermission = rolePermission;
         this.user = user;
-        this.userDeputation = userDeputation;
+        this.userDelegation = userDelegation;
         this.userRole = userRole;
         this.userPermission = userPermission;
         this.team = team;
@@ -279,8 +259,8 @@ var MigrationTableMapping = /** @class */ (function () {
             this.rolePermission = TableMapping.RolePermissionMapping;
         if (!user)
             this.user = TableMapping.UserMapping;
-        if (!userDeputation)
-            this.userDeputation = TableMapping.UserDeputationMapping;
+        if (!userDelegation)
+            this.userDelegation = TableMapping.UserDelegationMapping;
         if (!userRole)
             this.userRole = TableMapping.UserRoleMapping;
         if (!userPermission)
@@ -298,11 +278,12 @@ var MigrationTableMapping = /** @class */ (function () {
 }());
 exports.MigrationTableMapping = MigrationTableMapping;
 var PermissionMigrationConfig = /** @class */ (function () {
-    function PermissionMigrationConfig(permissionTable, roleTable, rolePermissionTable, userTable, userRoleTable, userPermissionTable, teamTable, teamUserTable, teamRoleTable, teamPermissionTable, userPermissionEnabled, teamPermissionEnabled, userRelatedPermissionEnabled, teamRelatedPermissionEnabled, TableMapping) {
+    function PermissionMigrationConfig(permissionTable, roleTable, rolePermissionTable, userTable, userDelegationTable, userRoleTable, userPermissionTable, teamTable, teamUserTable, teamRoleTable, teamPermissionTable, userPermissionEnabled, teamPermissionEnabled, userRelatedPermissionEnabled, teamRelatedPermissionEnabled, userDelegationEnabled, cacheEnabled, TableMapping) {
         if (permissionTable === void 0) { permissionTable = null; }
         if (roleTable === void 0) { roleTable = null; }
         if (rolePermissionTable === void 0) { rolePermissionTable = null; }
         if (userTable === void 0) { userTable = null; }
+        if (userDelegationTable === void 0) { userDelegationTable = null; }
         if (userRoleTable === void 0) { userRoleTable = null; }
         if (userPermissionTable === void 0) { userPermissionTable = null; }
         if (teamTable === void 0) { teamTable = null; }
@@ -313,11 +294,14 @@ var PermissionMigrationConfig = /** @class */ (function () {
         if (teamPermissionEnabled === void 0) { teamPermissionEnabled = false; }
         if (userRelatedPermissionEnabled === void 0) { userRelatedPermissionEnabled = false; }
         if (teamRelatedPermissionEnabled === void 0) { teamRelatedPermissionEnabled = false; }
+        if (userDelegationEnabled === void 0) { userDelegationEnabled = false; }
+        if (cacheEnabled === void 0) { cacheEnabled = false; }
         if (TableMapping === void 0) { TableMapping = null; }
         this.permissionTable = permissionTable;
         this.roleTable = roleTable;
         this.rolePermissionTable = rolePermissionTable;
         this.userTable = userTable;
+        this.userDelegationTable = userDelegationTable;
         this.userRoleTable = userRoleTable;
         this.userPermissionTable = userPermissionTable;
         this.teamTable = teamTable;
@@ -328,6 +312,8 @@ var PermissionMigrationConfig = /** @class */ (function () {
         this.teamPermissionEnabled = teamPermissionEnabled;
         this.userRelatedPermissionEnabled = userRelatedPermissionEnabled;
         this.teamRelatedPermissionEnabled = teamRelatedPermissionEnabled;
+        this.userDelegationEnabled = userDelegationEnabled;
+        this.cacheEnabled = cacheEnabled;
         this.TableMapping = TableMapping;
         if (!permissionTable)
             this.permissionTable = MigrationTables.DefaultPermissionTable;
@@ -339,6 +325,8 @@ var PermissionMigrationConfig = /** @class */ (function () {
             this.userTable = MigrationTables.DefaultUserTable;
         if (!userRoleTable)
             this.userRoleTable = MigrationTables.DefaultUserRole;
+        if (!userDelegationTable)
+            this.userDelegationTable = MigrationTables.DefaultUserDelegation;
         if (!userPermissionTable)
             this.userPermissionTable = MigrationTables.DefaultUserPermissionTable;
         if (!teamTable)
@@ -349,6 +337,8 @@ var PermissionMigrationConfig = /** @class */ (function () {
             this.teamRoleTable = MigrationTables.DefaultTeamRole;
         if (!teamPermissionTable)
             this.teamPermissionTable = MigrationTables.DefaultTeamPermission;
+        if (!TableMapping)
+            this.TableMapping = new MigrationTableMapping();
     }
     return PermissionMigrationConfig;
 }());
@@ -397,10 +387,17 @@ var PermissionMigration = /** @class */ (function () {
 }());
 exports.PermissionMigration = PermissionMigration;
 var PermissionControllerConfig = /** @class */ (function () {
-    function PermissionControllerConfig(migration, userResolver, migrationEnabled) {
+    function PermissionControllerConfig(migration, userResolver, recordResolver, migrationEnabled, apiEndPoint, apiEndPointEnabled) {
+        if (apiEndPointEnabled === void 0) { apiEndPointEnabled = true; }
         this.migration = migration;
         this.userResolver = userResolver;
+        this.recordResolver = recordResolver;
         this.migrationEnabled = migrationEnabled;
+        this.apiEndPoint = apiEndPoint;
+        this.apiEndPointEnabled = apiEndPointEnabled;
+        if (!this.apiEndPoint) {
+            this.apiEndPoint = "/api/permission/check";
+        }
     }
     return PermissionControllerConfig;
 }());

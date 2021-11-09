@@ -1,1 +1,0 @@
-{"version":3,"file":"PermissionProperty.d.ts","sourceRoot":"","sources":["../src/PermissionProperty.ts"],"names":[],"mappings":"AAAA,qBAAa,kBAAkB;IACR,IAAI,EAAE,MAAM;IAAS,KAAK,EAAE,MAAM,GAAC,GAAG;gBAAtC,IAAI,EAAE,MAAM,EAAS,KAAK,EAAE,MAAM,GAAC,GAAG;CAC5D"}
